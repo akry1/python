@@ -45,8 +45,8 @@ def trainfile(path):
     transitions = {}
     for i in range(len(tags)-1):
         transitions[(tags[i],tags[i+1])] = transitions.get((tags[i],tags[i+1]),0)+1
-    transitionProbs = { i: float(j)/tags.count(i[0]) for i,j in transitions.items()}
-    observationProbs = { i: float(j)/tags.count(i[0]) for i,j in observations.items()}
+    transitionProbs = { i: float(j)/(tags.count(i[0])) for i,j in transitions.items()}
+    observationProbs = { i: float(j)/(tags.count(i[0])) for i,j in observations.items()}
 
     return transitionProbs, observationProbs, set(tags)
 
@@ -88,16 +88,22 @@ def testfile(path):
 def Viterbi(sentence):
     v= {}
     bp = {}
-    unknownProb = .00001
-    for i in range(len(sentence)):
+    p = {}
+    unknownProb = 1.0/(10**8+len(tags))
+    for i in range(len(sentence)):            
+        np = {}
         for j in tags:            
             if i==0:
                 v[(i,j)] = transitionProbs.get((sentence[i],j),unknownProb)* observationProbs.get((j,sentence[i]),unknownProb)
                 bp[(i,j)] = j
-            else:                
+                p[j] = [j]
+            else:            
                 v[(i,j)], maxstate = max([ (v[(i-1,k)]*transitionProbs.get((j,k),unknownProb)*observationProbs.get((j,sentence[i]),unknownProb),k) \
                                            for k in tags], key=lambda x:x[0])
                 bp[(i,j)] = maxstate
+                np[j]= p[maxstate]+[j]
+        if i!=0:
+            p = np
 
     finalProb,finalState = max( [ (v[(len(sentence)-1,s)],s) for s in tags], key=lambda x:x[0])
 
@@ -106,6 +112,7 @@ def Viterbi(sentence):
         stateSequence.append(bp[(len(sentence)-i,stateSequence[i-1])])
     stateSequence.reverse()
     return stateSequence
+    #return p[finalState]
 
 transitionProbs, observationProbs, tags = trainfile('F:\Skydrive\ASU\NLP\entrain.txt')
 
